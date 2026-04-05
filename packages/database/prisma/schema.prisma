@@ -17,6 +17,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  projects      Project[]
 
   @@unique([email])
   @@map("user")
@@ -68,5 +69,59 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum DeploymentStatus {
+  QUEUED
+  BUILDING
+  SUCCESS
+  FAILED
+}
+
+model Project {
+  id              String   @id @default(cuid())
+  name            String
+  repoUrl         String
+  branch          String   @default("main")
+  buildCommand    String?
+  rootDirectory   String?
+  metadata        Json?
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  deployments Deployment[]
+  envs Env[]
+
+  @@index([userId])
+}
+
+model Deployment {
+  id         String   @id @default(cuid())
+
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  status     DeploymentStatus
+  url        String?
+  port       Int?
+  logs       String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Env{
+  id String @id @default(cuid())
+  key String
+  value String
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([projectId])
 }
 
