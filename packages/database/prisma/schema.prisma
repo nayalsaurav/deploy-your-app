@@ -72,25 +72,28 @@ model Verification {
 }
 
 enum DeploymentStatus {
-  QUEUED
+  PENDING
+  CLONING
+  DETECTING
+  ALLOCATING
   BUILDING
+  DEPLOYING
   SUCCESS
   FAILED
 }
 
 model Project {
   id              String   @id @default(cuid())
-  name            String
-  repoUrl         String
-  branch          String   @default("main")
-  buildCommand    String?
-  rootDirectory   String?
-  metadata        Json?
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  repositoryFullName String
+  defaultBranch String  @default("main")
+  deploymentUrl String?
+  metadata        Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
+  lastDeployedAt  DateTime?
   deployments Deployment[]
   envs Env[]
 
@@ -102,14 +105,16 @@ model Deployment {
 
   projectId  String
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  status     DeploymentStatus
+  branch     String
+  commitHash String?
+  status     DeploymentStatus @default(PENDING)
   url        String?
   port       Int?
   logs       String?
-
+  error      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  completedAt DateTime?
 
   @@index([projectId])
 }
