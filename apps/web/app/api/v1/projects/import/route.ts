@@ -52,19 +52,19 @@ export const POST = async (req: NextRequest) => {
         });
 
         const [owner, repoName] = repositoryFullName.split("/");
-        await queue.add("clone-repository", {
-            token: account.accessToken,
-            repo: repositoryFullName,
-            branch: defaultBranch,
-            owner,
-            repoName,
-            projectId: project.id,
-            deploymentId: deployment.id,
-            // For initial import, we don't have PR-specific data
-            prNumber: 0,
-            commentId: null,
-            installationId: null,
-        });
+        // await queue.add("clone-repository", {
+        //     token: account.accessToken,
+        //     repo: repositoryFullName,
+        //     branch: defaultBranch,
+        //     owner,
+        //     repoName,
+        //     projectId: project.id,
+        //     deploymentId: deployment.id,
+        //     // For initial import, we don't have PR-specific data
+        //     prNumber: 0,
+        //     commentId: null,
+        //     installationId: null,
+        // });
         return NextResponse.json({ project, deployment });
     } catch (error: any) {
         console.error("Error importing project:", error);

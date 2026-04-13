@@ -21,5 +21,6 @@ const authOptions = {
     joins: true
   }
 } satisfies BetterAuthOptions;
-
 export const auth = betterAuth<typeof authOptions>(authOptions);
+export type Session = typeof auth.$Infer.Session;
+export type User = typeof auth.$Infer.Session.user;
