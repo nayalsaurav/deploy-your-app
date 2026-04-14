@@ -1,16 +1,26 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { getSession } from "@/lib/auth-session"
+import { AppSidebar } from "@/components/app-sidebar";
+import { getSession, requireAuth } from "@/lib/auth-session";
 import {
     SidebarInset,
     SidebarProvider,
     SidebarTrigger,
-} from "@workspace/ui/components/sidebar"
-import { redirect } from "next/navigation"
+} from "@workspace/ui/components/sidebar";
+import { redirect } from "next/navigation";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const session = await getSession();
+export default async function DashboardLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    let session = null;
+    try {
+        session = await requireAuth();
+
+    } catch (error) {
+        console.error("Error fetching session:", error);
+    }
     if (!session?.user) {
-        redirect("/");
+        redirect("/signin");
     }
     return (
         <SidebarProvider>
@@ -24,6 +34,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 {children}
             </SidebarInset>
         </SidebarProvider>
-    )
+    );
 }
-

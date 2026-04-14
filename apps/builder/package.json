@@ -1,0 +1,16 @@
+{
+  "name": "builder",
+  "module": "src/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.6.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "bullmq": "^5.73.5",
+    "zod": "^4.3.6"
+  }
+}

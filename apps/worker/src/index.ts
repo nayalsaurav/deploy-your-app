@@ -33,6 +33,7 @@ const worker = new Worker(
   {
     connection,
     concurrency: 1,
+    prefix: "launchdrop",
   }
 )
 
@@ -43,3 +44,5 @@ worker.on("completed", (job) => {
 worker.on("failed", (job, err) => {
   console.error(`Job ${job?.id} failed`, err)
 })
+
+console.log("Worker is running and waiting for jobs...")

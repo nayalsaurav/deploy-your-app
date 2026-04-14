@@ -8,7 +8,7 @@ export async function getSession() {
   return session
 }
 
-export async function requireSession() {
+export async function requireAuth() {
   const session = await getSession()
   if (!session) {
     throw new Error("Unauthorized")

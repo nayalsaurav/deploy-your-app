@@ -17,6 +17,7 @@ import {
 } from "@workspace/ui/components/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import Link from "next/link"
 
 export function NavMain({
   items,
@@ -29,6 +30,7 @@ export function NavMain({
     items?: {
       title: string
       url: string
+      isActive?: boolean
     }[]
   }[]
 }) {
@@ -40,7 +42,7 @@ export function NavMain({
           if (!item.items || item.items.length === 0) {
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton tooltip={item.title} isActive={item.isActive} render={<a href={item.url} />}>
+                <SidebarMenuButton tooltip={item.title} isActive={item.isActive} render={<Link href={item.url} />}>
                   {item.icon}
                   <span>{item.title}</span>
                 </SidebarMenuButton>
@@ -66,7 +68,7 @@ export function NavMain({
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton render={<a href={subItem.url} />}>
+                      <SidebarMenuSubButton isActive={subItem.isActive} render={<Link href={subItem.url} />}>
                         <span>{subItem.title}</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>

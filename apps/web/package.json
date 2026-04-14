@@ -15,8 +15,10 @@
     "@better-auth/prisma-adapter": "^1.6.0",
     "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.6",
+    "@tanstack/react-query": "^5.99.0",
     "@workspace/database": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "@workspace/queue": "workspace:*",
     "better-auth": "^1.5.6",
     "bullmq": "^5.73.0",
     "ioredis": "^5.10.1",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@tanstack/eslint-plugin-query": "^5.99.0",
     "@types/node": "^25.1.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
