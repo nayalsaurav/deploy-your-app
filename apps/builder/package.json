@@ -2,6 +2,9 @@
   "name": "builder",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.6.0"
@@ -11,6 +14,8 @@
   },
   "dependencies": {
     "bullmq": "^5.73.5",
-    "zod": "^4.3.6"
+    "ioredis": "^5.10.1",
+    "zod": "^4.3.6",
+    "@workspace/database": "workspace:*"
   }
 }

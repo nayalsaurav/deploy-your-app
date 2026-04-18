@@ -6,7 +6,7 @@ const connection = {
 }
 
 const defaultOptions = {
-  attempts: 3,
+  attempts: 1,
   backoff: { type: "exponential", delay: 2000 },
   removeOnComplete: true,
   removeOnFail: 1000,
