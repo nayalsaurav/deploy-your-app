@@ -3,161 +3,204 @@ import { redisConnection, redisPublisher } from "./config"
 import { payloadSchema } from "./types"
 import { cloneRepo } from "./services/git.service"
 import { logger } from "./utils/logger"
-import { buildAndProcessDeployment, cleanupTempBuilds } from "./services/docker.service"
+import { buildAndProcessDeployment } from "./services/docker.service"
+import { uploadFolderToR2 } from "./services/upload.service"
+import {
+  performFullCleanup,
+  cleanupDockerResources,
+} from "./services/cleanup.service"
 import { findAvailablePort, releasePort } from "./utils/port-manager"
 import { prisma } from "@workspace/database"
+import { generateUniqueSubdomain } from "./utils/domain-generator"
 
-const streamLog = (deploymentId: string, message: string) => {
-  redisPublisher.publish(`logs:${deploymentId}`, `[SYSTEM] ${message}\n`).catch(() => { })
-}
+import { publishLog, updateDeployment } from "./utils/utils"
 
 export const worker = new Worker(
   "execution-queue",
   async (job) => {
-    const parsedData = payloadSchema.safeParse(job.data)
+    // ---------- Step 0: Validate ----------
+    const parsed = payloadSchema.safeParse(job.data)
 
-    if (!parsedData.success) {
-      logger.error(
-        { jobId: job.id, error: parsedData.error },
-        "Invalid job data"
-      )
+    if (!parsed.success) {
+      logger.error({ jobId: job.id, error: parsed.error }, "Invalid job data")
       throw new Error("Invalid job data")
     }
 
-    const data = parsedData.data
+    const data = parsed.data
+    const deploymentId = data.deploymentId
 
-    logger.info(
-      { jobId: job.id, deploymentId: data.deploymentId },
-      "Executing job"
-    )
-    streamLog(data.deploymentId, "Initializing deployment sequence...")
+    let logBuffer = ""
+    let allocatedPort: number | undefined
+    let repo: any
+    let buildResult: any | undefined
 
-    await prisma.deployment.update({
-      where: { id: data.deploymentId },
-      data: { status: "CLONING" },
-    })
-
-    await job.updateProgress(10)
-
-    logger.info(
-      { jobId: job.id, repo: data.repo },
-      "Starting repository clone..."
-    )
-    streamLog(data.deploymentId, `Cloning remote repository ${data.repo}...`)
-    const cloneResult = await cloneRepo({
-      repo: data.repo,
-      branch: data.branch,
-      token: data.token,
-    })
-    logger.info(
-      { jobId: job.id, path: cloneResult.path },
-      "Repository cloned successfully"
-    )
-    streamLog(data.deploymentId, "Repository footprint cloned.")
-
-    let targetPort: number | undefined
+    logger.info({ jobId: job.id, deploymentId }, "Job started")
+    await publishLog(deploymentId, "[SYSTEM] Starting deployment...\n")
 
     try {
+      // ---------- Step 1: Clone ----------
+      await updateDeployment(deploymentId, { status: "CLONING" })
+      await job.updateProgress(10)
+
+      repo = await cloneRepo({
+        repo: data.repo,
+        branch: data.branch,
+        token: data.token,
+        deploymentId,
+      })
+
+      logBuffer += repo.logs
+
+      if (!repo.success) {
+        throw new Error(repo.message)
+      }
+
+      await publishLog(deploymentId, "[SYSTEM] Repository cloned\n")
+
+      // ---------- Step 2: Build ----------
+      await updateDeployment(deploymentId, { status: "BUILDING" })
       await job.updateProgress(40)
 
-      targetPort = await findAvailablePort()
+      allocatedPort = await findAvailablePort()
 
-      logger.info(
-        { jobId: job.id, deploymentId: data.deploymentId, targetPort },
-        "Starting project build..."
+      buildResult = await buildAndProcessDeployment(
+        repo.path,
+        allocatedPort,
+        deploymentId,
+        600_000
       )
-      streamLog(data.deploymentId, "Spawning builder engine...")
 
-      await prisma.deployment.update({
-        where: { id: data.deploymentId },
-        data: { status: "BUILDING" },
-      })
-      const buildResult = await buildAndProcessDeployment(
-        cloneResult.path,
-        targetPort,
-        data.deploymentId,
-        600_000,
-        (chunk) => {
-          redisPublisher.publish(`logs:${data.deploymentId}`, chunk).catch(() => { })
-        }
-      )
+      logBuffer += buildResult.buildLogs
 
       if (!buildResult.success) {
         throw new Error(
-          (buildResult.error || "Failed to process deployment") +
-          "\\n" +
-          (buildResult.buildLogs || "")
+          (buildResult.error || "Build failed") +
+            "\n" +
+            (buildResult.buildLogs || "")
         )
       }
 
-      logger.info(
-        { jobId: job.id, deploymentId: data.deploymentId, buildResult },
-        "Project build completed successfully"
-      )
-      streamLog(data.deploymentId, "Project build confirmed via Docker service.")
+      await publishLog(deploymentId, "[SYSTEM] Build completed\n")
 
-      await prisma.deployment.update({
-        where: { id: data.deploymentId },
-        data: {
-          status: "SUCCESS",
-          port: targetPort,
-          logs: buildResult.buildLogs,
-          completedAt: new Date(),
-        },
+      // ---------- Step 3: Upload (if static) ----------
+      if (buildResult.outputPath) {
+        await publishLog(
+          deploymentId,
+          "[SYSTEM] Uploading static files to R2...\n"
+        )
+
+        const uploaded = await uploadFolderToR2(
+          buildResult.outputPath,
+          deploymentId
+        )
+
+        if (!uploaded) {
+          throw new Error("Failed to upload static files to R2")
+        }
+
+        // ---------- Step 3.1: Cleanup Docker for static site ----------
+        await cleanupDockerResources(
+          buildResult.containerId,
+          buildResult.imageName
+        )
+      }
+
+      // ---------- Step 4: Finalize ----------
+      let project = await prisma.project.findUnique({
+        where: { id: data.projectId },
+      })
+
+      const oldMetadata = project?.metadata as {
+        containerId?: string
+        imageName?: string
+      } | null
+
+      let domain = project?.deploymentUrl
+      const baseDomain = process.env.BASE_DOMAIN || "localhost"
+
+      if (!domain) {
+        const subdomain = await generateUniqueSubdomain(data.repoName)
+        domain = `${subdomain}.${baseDomain}`
+      } else if (!domain.includes(".")) {
+        domain = `${domain}.${baseDomain}`
+      }
+
+      await updateDeployment(deploymentId, {
+        status: "SUCCESS",
+        port: buildResult.outputPath ? null : allocatedPort,
+        url: domain,
+        logs: logBuffer,
+        completedAt: new Date(),
       })
 
       await prisma.project.update({
         where: { id: data.projectId },
         data: {
+          deploymentUrl: domain,
           metadata: {
             containerId: buildResult.containerId,
             imageName: buildResult.imageName,
+            isStatic: !!buildResult.outputPath,
+            r2Path: buildResult.outputPath
+              ? `deployments/${deploymentId}`
+              : null,
           },
         },
       })
 
-      // await job.updateProgress(70)
-
-      // const deployResult = await deployTheProject(data)
-      // await job.updateProgress(100)
+      // ---------- Step 5: Clean up old deployment container if exists ----------
+      if (
+        oldMetadata?.containerId &&
+        oldMetadata.containerId !== buildResult.containerId
+      ) {
+        await publishLog(
+          deploymentId,
+          "[SYSTEM] Stopping previous deployment container...\n"
+        )
+        logger.info(
+          { oldContainerId: oldMetadata.containerId },
+          "Cleaning up previous deployment container"
+        )
+        await cleanupDockerResources(
+          oldMetadata.containerId,
+          oldMetadata.imageName
+        )
+      }
 
       await job.updateProgress(100)
     } catch (error) {
-      if (targetPort) {
-        logger.info(
-          { jobId: job.id, deploymentId: data.deploymentId, targetPort },
-          "Releasing port due to failure"
-        )
-        await releasePort(targetPort)
+      if (allocatedPort) {
+        await releasePort(allocatedPort)
       }
-      logger.error(
-        { jobId: job.id, deploymentId: data.deploymentId, error },
-        "Job execution failed"
-      )
-      streamLog(data.deploymentId, `CRITICAL ERROR: ${String(error)}`)
 
-      await prisma.deployment.update({
-        where: { id: data.deploymentId },
-        data: {
-          status: "FAILED",
-          error: String(error),
-          completedAt: new Date(),
-        },
-      }).catch(err => logger.error({ err }, "Could not update db to FAILED"))
+      // Cleanup everything on failure
+      await performFullCleanup({
+        deploymentId,
+        repoPath: repo?.path,
+        containerId: buildResult?.containerId,
+        imageName: buildResult?.imageName,
+        forceRemoveImage: true,
+      })
+
+      logger.error({ jobId: job.id, deploymentId, error }, "Job failed")
+
+      await publishLog(deploymentId, `[SYSTEM] ERROR: ${String(error)}\n`)
+
+      await updateDeployment(deploymentId, {
+        status: "FAILED",
+        error: String(error),
+        logs: logBuffer,
+        completedAt: new Date(),
+      }).catch((err) => logger.error({ err }, "Failed to update DB"))
 
       throw error
     } finally {
-      // Always clean up temp directory regardless of success or failure
-      logger.info(
-        { jobId: job.id, path: cloneResult.path },
-        "Cleaning up cloned repository..."
-      )
-      await cloneResult.cleanup()
-      await cleanupTempBuilds(data.deploymentId)
-      logger.info(
-        { jobId: job.id, path: cloneResult.path },
-        "Cleanup completed"
-      )
+      await performFullCleanup({
+        deploymentId,
+        repoPath: repo?.path,
+      })
+
+      logger.info({ jobId: job.id }, "Job finished (clearing workspace)")
     }
   },
   {
@@ -169,30 +212,20 @@ export const worker = new Worker(
 )
 
 worker.on("completed", (job) => {
-  logger.info(
-    { jobId: job.id, deploymentId: job.data?.deploymentId },
-    "Job completed"
-  )
+  logger.info({ jobId: job.id }, "Job completed")
 })
 
 worker.on("failed", (job, err) => {
-  logger.error(
-    { jobId: job?.id, deploymentId: job?.data?.deploymentId, err },
-    "Job failed"
-  )
+  logger.error({ jobId: job?.id, err }, "Job failed")
 })
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  logger.info("SIGTERM received, shutting down worker...")
+const shutdown = async (signal: string) => {
+  logger.info(`${signal} received. Shutting down...`)
   await worker.close()
   process.exit(0)
-})
+}
 
-process.on("SIGINT", async () => {
-  logger.info("SIGINT received, shutting down worker...")
-  await worker.close()
-  process.exit(0)
-})
+process.on("SIGTERM", shutdown)
+process.on("SIGINT", shutdown)
 
-logger.info("Execution Worker is running and waiting for jobs...")
+logger.info("Worker is running...")

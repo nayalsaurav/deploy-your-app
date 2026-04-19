@@ -13,9 +13,10 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1032.0",
+    "@workspace/database": "workspace:*",
     "bullmq": "^5.73.5",
     "ioredis": "^5.10.1",
-    "zod": "^4.3.6",
-    "@workspace/database": "workspace:*"
+    "zod": "^4.3.6"
   }
 }
