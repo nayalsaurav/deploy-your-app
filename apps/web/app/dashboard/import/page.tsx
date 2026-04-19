@@ -93,7 +93,7 @@ export default function ImportPage() {
     const submitError = importMutation.error?.message
 
     return (
-        <div className="flex h-[calc(100vh-theme(spacing.16))] w-full flex-col md:flex-row overflow-hidden">
+        <div className="flex h-[calc(100vh-(--spacing(16)))] w-full flex-col md:flex-row overflow-hidden">
             {/* Left Panel: Repository List */}
             <div className="w-full md:w-1/2 lg:w-2/5 h-full">
                 <RepoList

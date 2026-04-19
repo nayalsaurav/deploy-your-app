@@ -20,7 +20,7 @@ export default async function DashboardLayout({
         console.error("Error fetching session:", error);
     }
     if (!session?.user) {
-        redirect("/signin");
+        redirect("/");
     }
     return (
         <SidebarProvider>

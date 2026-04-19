@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog"
+import { Button } from "@workspace/ui/components/button"
 
 export default function ProjectDetail() {
   const { id } = useParams()
@@ -66,6 +67,20 @@ export default function ProjectDetail() {
     },
   })
 
+  const deployMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/v1/projects/${id}/deploy`, {
+        method: "POST",
+      })
+      if (!res.ok) throw new Error("Failed to queue deployment")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", id] })
+      queryClient.invalidateQueries({ queryKey: ["deployments"] })
+    },
+  })
+
   const project = data?.data?.project
 
   if (isLoading) return <ProjectDetailSkeleton />
@@ -88,7 +103,15 @@ export default function ProjectDetail() {
           <div className="flex items-center gap-3">
             {project.deploymentUrl && (
               <a
-                href={project.deploymentUrl}
+                href={
+                  project.deploymentUrl.includes(".")
+                    ? project.deploymentUrl.startsWith("http")
+                      ? project.deploymentUrl
+                      : project.deploymentUrl.endsWith(".localhost")
+                        ? `http://${project.deploymentUrl}`
+                        : `https://${project.deploymentUrl}`
+                    : `http://${project.deploymentUrl}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || "localhost"}`
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
@@ -97,17 +120,21 @@ export default function ProjectDetail() {
                 <span>Visit Site</span>
               </a>
             )}
-            <button className="inline-flex items-center gap-2 rounded-xl border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground">
+            <button
+              onClick={() => deployMutation.mutate()}
+              disabled={deployMutation.isPending}
+              className="inline-flex items-center gap-2 rounded-xl border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+            >
               <HugeiconsIcon icon={Tick02Icon} size={16} className="text-muted-foreground" />
-              <span>Redeploy</span>
+              <span>{deployMutation.isPending ? "Deploying..." : "Redeploy"}</span>
             </button>
 
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
               <AlertDialogTrigger render={
-                <button className="inline-flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-5 py-2.5 text-sm font-medium text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground hover:scale-[1.02] active:scale-[0.98]">
+                <Button variant="destructive" className={"px-5 py-2.5 text-sm font-medium shadow-sm"}>
                   <HugeiconsIcon icon={Delete02Icon} size={16} />
                   <span>Delete</span>
-                </button>
+                </Button>
               } />
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -171,7 +198,11 @@ export default function ProjectDetail() {
             </CardHeader>
             <CardContent>
               <p className="text-lg font-semibold truncate">
-                {project.deploymentUrl?.replace('https://', '') || 'No deployment yet'}
+                {project.deploymentUrl
+                  ? project.deploymentUrl.includes(".")
+                    ? project.deploymentUrl.replace("https://", "")
+                    : `${project.deploymentUrl}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || "localhost"}`
+                  : "No deployment yet"}
               </p>
               <span className="text-sm text-muted-foreground">Main domain</span>
             </CardContent>

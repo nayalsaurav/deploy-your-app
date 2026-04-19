@@ -1,0 +1,18 @@
+{
+    # On-Demand TLS checks our internal endpoint
+    on_demand_tls {
+        ask http://host.docker.internal:8000/_internal/tls-check
+    }
+}
+
+# The main wildcard or catch-all block
+# Note: For strict wildecard support (*.domain.com), Let's Encrypt requires a DNS challenge plug-in.
+# Standard PaaS "any domain points here" just listens on everything and uses On-Demand TLS for the exact hostname requested dynamically.
+:443, :80 {
+    tls {
+        on_demand
+    }
+    
+    # Reverse proxy to our internal Node.js router
+    reverse_proxy host.docker.internal:8000
+}

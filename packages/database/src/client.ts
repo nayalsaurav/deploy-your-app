@@ -2,33 +2,39 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import { Pool } from "pg"
 import { PrismaClient } from "./generated/prisma/client"
 
-const globalForPrisma = global as unknown as {
-  prisma: PrismaClient
-  pool: Pool
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is not set")
 }
 
-// 1. Create the Pool specifically for the adapter
-const connectionString = process.env.DATABASE_URL
-
-const pool =
-  globalForPrisma.pool ||
-  new Pool({
-    connectionString,
+const prismaClientSingleton = () => {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
   })
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.pool = pool
+  const adapter = new PrismaPg(pool)
 
-// 2. Pass the pool to the adapter
-const adapter = new PrismaPg(pool)
+  return new PrismaClient({ adapter })
+}
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    adapter,
-    // Optional: Log queries to see if connection works
-    // log: ['query', 'info', 'warn', 'error'],
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClientSingleton | undefined
+}
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma
+}
+
+if (process.env.NODE_ENV === "production") {
+  process.on("beforeExit", async () => {
+    await prisma.$disconnect()
   })
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+}
 
 export * from "./generated/prisma/client"

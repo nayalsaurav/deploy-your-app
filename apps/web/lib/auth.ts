@@ -1,6 +1,6 @@
-import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { prisma } from "@workspace/database";
-import { prismaAdapter } from "@better-auth/prisma-adapter";
+import { betterAuth, type BetterAuthOptions } from "better-auth"
+import { prisma } from "@workspace/database"
+import { prismaAdapter } from "@better-auth/prisma-adapter"
 
 const authOptions = {
   database: prismaAdapter(prisma, {
@@ -14,13 +14,12 @@ const authOptions = {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       scope: ["read:user", "user:email", "repo"],
-
     },
   },
   experimental: {
-    joins: true
-  }
-} satisfies BetterAuthOptions;
-export const auth = betterAuth<typeof authOptions>(authOptions);
-export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.Session.user;
+    joins: true,
+  },
+} satisfies BetterAuthOptions
+export const auth = betterAuth<typeof authOptions>(authOptions)
+export type Session = typeof auth.$Infer.Session.session
+export type User = typeof auth.$Infer.Session.user

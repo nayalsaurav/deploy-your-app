@@ -140,13 +140,25 @@ export default function ProjectsPage() {
               {/* URL */}
               {project.deploymentUrl && (
                 <a
-                  href={project.deploymentUrl}
+                  href={
+                    project.deploymentUrl.includes(".")
+                      ? project.deploymentUrl.startsWith("http")
+                        ? project.deploymentUrl
+                        : project.deploymentUrl.endsWith(".localhost")
+                          ? `http://${project.deploymentUrl}`
+                          : `https://${project.deploymentUrl}`
+                      : `http://${project.deploymentUrl}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || "localhost"}`
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="mb-6 inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
                 >
                   <HugeiconsIcon icon={Link01Icon} size={14} />
-                  <span>{project.deploymentUrl.replace('https://', '')}</span>
+                  <span>
+                    {project.deploymentUrl.includes(".")
+                      ? project.deploymentUrl.replace("https://", "")
+                      : `${project.deploymentUrl}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || "localhost"}`}
+                  </span>
                 </a>
               )}
 

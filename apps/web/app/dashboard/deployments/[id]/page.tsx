@@ -93,17 +93,25 @@ export default function DeploymentDetail() {
         </div>
 
         <div className="flex items-center gap-3">
-          {deployment.url && (
-            <a
-              href={deployment.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <HugeiconsIcon icon={Link01Icon} size={16} />
-              <span>Visit Deployment</span>
-            </a>
-          )}
+            {deployment.url && (
+              <a
+                href={
+                  deployment.url.includes(".")
+                    ? deployment.url.startsWith("http")
+                      ? deployment.url
+                      : deployment.url.endsWith(".localhost")
+                        ? `http://${deployment.url}`
+                        : `https://${deployment.url}`
+                    : `http://${deployment.url}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || "localhost"}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <HugeiconsIcon icon={Link01Icon} size={16} />
+                <span>Visit Deployment</span>
+              </a>
+            )}
         </div>
       </div>
 
