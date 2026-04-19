@@ -240,11 +240,15 @@ export default function ProjectDetail() {
 
                     <div>
                       <h4 className="font-medium text-base group-hover:text-primary transition-colors">
-                        Deployment to {project.defaultBranch}
+                        Deployment to {deployment.branch}
                       </h4>
                       <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
                         <HugeiconsIcon icon={GithubIcon} size={14} />
-                        <span>Triggered manually via dashboard</span>
+                        <span>
+                          {deployment.commitHash
+                            ? `Triggered by GitHub push (${deployment.commitHash.substring(0, 7)})`
+                            : "Triggered manually via dashboard"}
+                        </span>
                       </div>
                     </div>
                   </div>

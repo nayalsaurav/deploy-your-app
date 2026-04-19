@@ -2,8 +2,17 @@
   "name": "api",
   "module": "src/index.ts",
   "type": "module",
+  "dependencies": {
+    "@octokit/webhooks": "^14.2.0",
+    "@workspace/database": "workspace:*",
+    "@workspace/queue": "workspace:*",
+    "express": "^5.2.1"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"

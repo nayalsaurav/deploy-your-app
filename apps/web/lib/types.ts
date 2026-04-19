@@ -5,7 +5,7 @@ export interface GithubRepository {
   description: string | null
   private: boolean
   htmlUrl: string
-  updatedAt: string
+  updatedAt: string | null
   language: string | null
   defaultBranch: string
 }

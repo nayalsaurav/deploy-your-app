@@ -58,7 +58,7 @@ export const POST = async (
     const [owner, repoName] = project.repositoryFullName.split("/")
 
     // Add event to queue
-    await deploymentQueue.add("clone-repository", {
+    await deploymentQueue.add("deployment-event", {
       token: account.accessToken,
       repo: project.repositoryFullName,
       branch: project.defaultBranch,

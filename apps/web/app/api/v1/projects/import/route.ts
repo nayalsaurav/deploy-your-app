@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/auth-session"
 import { prisma } from "@workspace/database"
 import { deploymentQueue } from "@workspace/queue"
+import { createGithubWebhook } from "@/lib/github"
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -59,7 +60,11 @@ export const POST = async (req: NextRequest) => {
     })
 
     const [owner, repoName] = repositoryFullName.split("/")
-    await deploymentQueue.add("clone-repository", {
+
+    // Auto-create Webhook in GitHub to listen for push events
+    await createGithubWebhook(account.accessToken, owner, repoName, project.id)
+
+    await deploymentQueue.add("deployment-event", {
       token: account.accessToken,
       repo: repositoryFullName,
       branch: defaultBranch,
