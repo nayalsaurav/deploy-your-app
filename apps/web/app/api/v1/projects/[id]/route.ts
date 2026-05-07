@@ -90,3 +90,55 @@ export async function DELETE(
     );
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await req.json();
+
+    // Check ownership
+    const project = await prisma.project.findUnique({
+      where: {
+        id: id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const updatedProject = await prisma.project.update({
+      where: {
+        id: id,
+      },
+      data: {
+        name: body.name,
+        rootDirectory: body.rootDirectory,
+        buildCommand: body.buildCommand,
+        startCommand: body.startCommand,
+        defaultBranch: body.defaultBranch,
+      },
+    });
+
+    return NextResponse.json(
+      { message: "Project updated successfully", data: { project: updatedProject } },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to update project" },
+      { status: 500 }
+    );
+  }
+}

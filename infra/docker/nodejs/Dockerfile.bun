@@ -1,0 +1,25 @@
+# ---- Node.js Server (Bun) ----
+FROM oven/bun:latest
+
+ARG ROOT_DIR=.
+WORKDIR /app
+
+ENV PORT=3000
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+
+# Copy source code
+COPY . .
+WORKDIR /app/${ROOT_DIR}
+
+# Install dependencies and build
+RUN bun install
+ARG BUILD_COMMAND="bun run build || true"
+RUN sh -c "$BUILD_COMMAND"
+
+EXPOSE 3000
+
+# Start the server
+ARG START_COMMAND="bun run start"
+ENV START_COMMAND=$START_COMMAND
+CMD sh -c "$START_COMMAND"

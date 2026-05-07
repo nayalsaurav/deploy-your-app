@@ -24,3 +24,9 @@ export const executionQueue = new Queue("execution-queue", {
   prefix: "launchdrop",
   defaultJobOptions: defaultOptions,
 })
+
+export const notificationQueue = new Queue("notification-queue", {
+  connection,
+  prefix: "launchdrop",
+  defaultJobOptions: defaultOptions,
+})

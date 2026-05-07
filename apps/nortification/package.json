@@ -1,0 +1,23 @@
+{
+  "name": "nortification",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "tsc",
+    "start": "bun run dist/index.js"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@slack/webhook": "^7.0.9",
+    "@workspace/queue": "workspace:*",
+    "bullmq": "^5.76.2",
+    "resend": "^6.12.2",
+    "twilio": "^6.0.0"
+  }
+}

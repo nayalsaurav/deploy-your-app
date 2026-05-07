@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "dev": "bun run src/index.ts",
+    "build": "tsc",
+    "start": "bun run dist/index.js"
   },
   "dependencies": {
     "@types/mime-types": "^3.0.1",

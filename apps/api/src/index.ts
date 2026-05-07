@@ -1,6 +1,6 @@
 import express from "express"
 import crypto from "crypto"
-import { prisma } from "@workspace/database"
+import { prisma, decrypt } from "@workspace/database"
 import { deploymentQueue } from "@workspace/queue"
 
 const app = express()
@@ -61,10 +61,25 @@ app.post("/webhook/:projectId", verifyGitHubSignature, async (req, res) => {
     // Verify project exists
     const project = await prisma.project.findUnique({
       where: { id: projectId },
+      include: { envs: true },
     })
 
     if (!project) {
       return res.status(404).send("Project not found")
+    }
+
+    const envs: Record<string, string> = {}
+    const encryptionKey = process.env.MASTER_ENCRYPTION_KEY
+
+    if (project.envs) {
+      project.envs.forEach((e) => {
+        try {
+          // Attempt decryption if key is present, otherwise fallback to raw value
+          envs[e.key] = encryptionKey ? decrypt(e.value, encryptionKey) : e.value
+        } catch (error) {
+          envs[e.key] = e.value
+        }
+      })
     }
 
     const account = await prisma.account.findFirst({
@@ -93,7 +108,7 @@ app.post("/webhook/:projectId", verifyGitHubSignature, async (req, res) => {
     await deploymentQueue.add("deployment-event", {
       token: account.accessToken,
       repo: project.repositoryFullName,
-      branch: project.defaultBranch,
+      branch: branch,
       owner,
       repoName,
       projectId: project.id,
@@ -101,6 +116,10 @@ app.post("/webhook/:projectId", verifyGitHubSignature, async (req, res) => {
       prNumber: 0,
       commentId: null,
       installationId: null,
+      buildCommand: project.buildCommand,
+      startCommand: project.startCommand,
+      rootDirectory: project.rootDirectory,
+      envs,
     })
 
     console.log(

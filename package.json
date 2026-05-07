@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "bun run docker:up && turbo dev",
+    "dev:infra": "bun run docker:up",
+    "start": "bun run docker:up && turbo start",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",

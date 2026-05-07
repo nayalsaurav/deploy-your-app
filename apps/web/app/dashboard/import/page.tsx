@@ -7,6 +7,7 @@ import { GithubRepository } from "@/lib/types"
 
 import { RepoList } from "./_components/repo-list"
 import { ImportForm } from "./_components/import-form"
+import { EnvVar } from "./_components/env-vars-input"
 
 export default function ImportPage() {
     const router = useRouter()
@@ -14,9 +15,14 @@ export default function ImportPage() {
 
     const [selectedRepo, setSelectedRepo] = useState<any>(null)
 
-    // Form fields
     const [projectName, setProjectName] = useState("")
     const [defaultBranch, setDefaultBranch] = useState("main")
+
+    // Advanced settings
+    const [buildCommand, setBuildCommand] = useState("")
+    const [startCommand, setStartCommand] = useState("")
+    const [rootDirectory, setRootDirectory] = useState("")
+    const [envs, setEnvs] = useState<EnvVar[]>([])
 
     // Fetch repositories
     const {
@@ -49,7 +55,7 @@ export default function ImportPage() {
 
     // Mutations for deployment
     const importMutation = useMutation({
-        mutationFn: async (payload: { repositoryFullName: string, name: string, defaultBranch: string }) => {
+        mutationFn: async (payload: { repositoryFullName: string, name: string, defaultBranch: string, buildCommand: string, startCommand: string, rootDirectory: string, envs: EnvVar[] }) => {
             const res = await fetch("/api/v1/projects/import", {
                 method: "POST",
                 headers: {
@@ -72,6 +78,10 @@ export default function ImportPage() {
         setSelectedRepo(repo)
         setProjectName(repo.name)
         setDefaultBranch(repo.default_branch || "main")
+        setBuildCommand("")
+        setStartCommand("")
+        setRootDirectory("")
+        setEnvs([])
         importMutation.reset()
     }
 
@@ -79,7 +89,11 @@ export default function ImportPage() {
         importMutation.mutate({
             repositoryFullName: selectedRepo.fullName,
             name: projectName,
-            defaultBranch: defaultBranch
+            defaultBranch: defaultBranch,
+            buildCommand,
+            startCommand,
+            rootDirectory,
+            envs
         })
     }
 
@@ -120,6 +134,14 @@ export default function ImportPage() {
                     setProjectName={setProjectName}
                     defaultBranch={defaultBranch}
                     setDefaultBranch={setDefaultBranch}
+                    buildCommand={buildCommand}
+                    setBuildCommand={setBuildCommand}
+                    startCommand={startCommand}
+                    setStartCommand={setStartCommand}
+                    rootDirectory={rootDirectory}
+                    setRootDirectory={setRootDirectory}
+                    envs={envs}
+                    setEnvs={setEnvs}
                     handleDeploy={handleDeploy}
                     isImporting={isImporting}
                     submitError={submitError}
@@ -136,6 +158,14 @@ export default function ImportPage() {
                         setProjectName={setProjectName}
                         defaultBranch={defaultBranch}
                         setDefaultBranch={setDefaultBranch}
+                        buildCommand={buildCommand}
+                        setBuildCommand={setBuildCommand}
+                        startCommand={startCommand}
+                        setStartCommand={setStartCommand}
+                        rootDirectory={rootDirectory}
+                        setRootDirectory={setRootDirectory}
+                        envs={envs}
+                        setEnvs={setEnvs}
                         handleDeploy={handleDeploy}
                         isImporting={isImporting}
                         submitError={submitError}

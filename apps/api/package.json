@@ -2,6 +2,11 @@
   "name": "api",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "tsc",
+    "start": "bun run dist/index.js"
+  },
   "dependencies": {
     "@octokit/webhooks": "^14.2.0",
     "@workspace/database": "workspace:*",

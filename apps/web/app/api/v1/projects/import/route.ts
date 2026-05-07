@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/auth-session"
-import { prisma } from "@workspace/database"
+import { prisma, encrypt } from "@workspace/database"
 import { deploymentQueue } from "@workspace/queue"
 import { createGithubWebhook } from "@/lib/github"
 
@@ -12,7 +12,7 @@ export const POST = async (req: NextRequest) => {
     }
 
     const body = await req.json()
-    const { repositoryFullName, defaultBranch, name } = body
+    const { repositoryFullName, defaultBranch, name, buildCommand, startCommand, rootDirectory, envs = [] } = body
     console.log("Received : ", { body })
 
     if (!repositoryFullName || !defaultBranch || !name) {
@@ -46,6 +46,19 @@ export const POST = async (req: NextRequest) => {
           repositoryFullName,
           defaultBranch,
           userId: session.user.id,
+          buildCommand: buildCommand || null,
+          startCommand: startCommand || null,
+          rootDirectory: rootDirectory || null,
+          envs: {
+            create: envs.map((e: { key: string, value: string }) => {
+              const encryptionKey = process.env.MASTER_ENCRYPTION_KEY
+              const encryptedValue = encryptionKey ? encrypt(e.value, encryptionKey) : e.value
+              return {
+                key: e.key,
+                value: encryptedValue
+              }
+            })
+          }
         },
       })
 
@@ -72,7 +85,14 @@ export const POST = async (req: NextRequest) => {
       repoName,
       projectId: project.id,
       deploymentId: deployment.id,
-      // For initial import, we don't have PR-specific data
+      // Pass the config settings for the initial build
+      rootDirectory: project.rootDirectory,
+      buildCommand: project.buildCommand,
+      startCommand: project.startCommand,
+      envs: envs.reduce((acc: any, curr: any) => {
+        acc[curr.key] = curr.value
+        return acc
+      }, {}),
       prNumber: 0,
       commentId: null,
       installationId: null,

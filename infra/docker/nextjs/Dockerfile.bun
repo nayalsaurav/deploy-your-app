@@ -1,29 +1,33 @@
 # ---- Builder Stage ----
-FROM oven/bun:1 AS builder
+FROM oven/bun:latest AS builder
 
+ARG ROOT_DIR=.
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY package.json bun.lock* bun.lockb* ./
-RUN bun install --frozen-lockfile
-
+# Copy everything to support monorepo structures
 COPY . .
+WORKDIR /app/${ROOT_DIR}
+
+RUN bun install --frozen-lockfile
 RUN bun run build
 
 # ---- Runtime Stage ----
 FROM oven/bun:1
 
+ARG ROOT_DIR=.
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/next.config.* ./
+# Copy artifacts from the specific root directory in builder
+COPY --from=builder /app/${ROOT_DIR}/public ./public
+COPY --from=builder /app/${ROOT_DIR}/.next ./.next
+COPY --from=builder /app/${ROOT_DIR}/package.json ./
+COPY --from=builder /app/${ROOT_DIR}/node_modules ./node_modules
+COPY --from=builder /app/${ROOT_DIR}/next.config.* ./
 
 EXPOSE 3000
 

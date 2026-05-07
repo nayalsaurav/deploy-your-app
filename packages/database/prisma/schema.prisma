@@ -89,6 +89,9 @@ model Project {
   name            String
   repositoryFullName String
   defaultBranch String  @default("main")
+  buildCommand  String?
+  startCommand  String?
+  rootDirectory String?
   deploymentUrl String?
   metadata        Json?
   createdAt       DateTime @default(now())

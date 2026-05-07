@@ -15,6 +15,10 @@ export const payloadSchema = z
     prNumber: z.number().int().nonnegative().optional(),
     commentId: z.coerce.string().nullish(),
     installationId: z.coerce.string().nullish(),
+    buildCommand: z.string().nullish(),
+    startCommand: z.string().nullish(),
+    rootDirectory: z.string().nullish(),
+    envs: z.record(z.string(), z.string()).optional(),
   })
   .strict()
 

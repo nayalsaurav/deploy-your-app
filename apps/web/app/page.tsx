@@ -1,7 +1,11 @@
 "use client";
+import { Comparison } from "@/components/landing/comparison";
+import { Features } from "@/components/landing/features";
+import { Hero } from "@/components/landing/hero";
+import { Navbar } from "@/components/landing/navbar";
+import { Process } from "@/components/landing/process";
+import { SelfHost } from "@/components/landing/selfhost";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@workspace/ui/components/button";
-
 
 export default function Page() {
   const handleSignin = async () => {
@@ -16,7 +20,11 @@ export default function Page() {
   }
   return (
     <div>
-      <Button onClick={handleSignin}>Sign with github</Button>
+      <Navbar onSignIn={handleSignin} />
+      <Hero onSignIn={handleSignin} />
+      <Process />
+      <Features />
+      <Comparison />
     </div>
   )
 }

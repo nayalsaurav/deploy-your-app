@@ -1,11 +1,12 @@
 # ---- Builder Stage ----
-FROM oven/bun:1 AS builder
+FROM oven/bun:latest AS builder
 
+ARG ROOT_DIR=.
 WORKDIR /app
 
-COPY package.json bun.lockb* bun.lock* ./
-RUN bun install --frozen-lockfile
-
+# Copy everything to support monorepo structures
 COPY . .
+WORKDIR /app/${ROOT_DIR}
 
+RUN bun install --frozen-lockfile
 RUN bun x vite build

@@ -7,6 +7,13 @@ import { Label } from "@workspace/ui/components/label"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeft01Icon, Rocket01Icon } from "@hugeicons/core-free-icons"
 import { GithubRepository } from "@/lib/types"
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@workspace/ui/components/accordion"
+import { EnvVar, EnvVarsInput } from "./env-vars-input"
 
 interface ImportFormProps {
     selectedRepo: GithubRepository | null
@@ -15,6 +22,14 @@ interface ImportFormProps {
     setProjectName: (name: string) => void
     defaultBranch: string
     setDefaultBranch: (branch: string) => void
+    buildCommand: string
+    setBuildCommand: (cmd: string) => void
+    startCommand: string
+    setStartCommand: (cmd: string) => void
+    rootDirectory: string
+    setRootDirectory: (dir: string) => void
+    envs: EnvVar[]
+    setEnvs: (envs: EnvVar[]) => void
     handleDeploy: () => void
     isImporting: boolean
     submitError: string | undefined
@@ -27,6 +42,14 @@ export function ImportForm({
     setProjectName,
     defaultBranch,
     setDefaultBranch,
+    buildCommand,
+    setBuildCommand,
+    startCommand,
+    setStartCommand,
+    rootDirectory,
+    setRootDirectory,
+    envs,
+    setEnvs,
     handleDeploy,
     isImporting,
     submitError
@@ -98,6 +121,60 @@ export function ImportForm({
                                 This branch will be deployed automatically on every push.
                             </p>
                         </div>
+
+                        <Accordion className="w-full">
+                            <AccordionItem value="advanced" className="border-none">
+                                <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline rounded-md px-3 bg-muted/40 hover:bg-muted/60 transition-colors">
+                                    Advanced Settings
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-4 pb-2 px-1 space-y-4">
+                                    <div className="space-y-3">
+                                        <Label htmlFor="rootDirectory" className="text-sm font-medium">Root Directory</Label>
+                                        <Input
+                                            id="rootDirectory"
+                                            value={rootDirectory}
+                                            onChange={(e) => setRootDirectory(e.target.value)}
+                                            placeholder="./"
+                                            disabled={isImporting}
+                                            className="h-11"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            The directory within your repository where your code is located.
+                                        </p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label htmlFor="buildCommand" className="text-sm font-medium">Build Command</Label>
+                                        <Input
+                                            id="buildCommand"
+                                            value={buildCommand}
+                                            onChange={(e) => setBuildCommand(e.target.value)}
+                                            placeholder="npm run build"
+                                            disabled={isImporting}
+                                            className="h-11"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label htmlFor="startCommand" className="text-sm font-medium">Start Command</Label>
+                                        <Input
+                                            id="startCommand"
+                                            value={startCommand}
+                                            onChange={(e) => setStartCommand(e.target.value)}
+                                            placeholder="npm start"
+                                            disabled={isImporting}
+                                            className="h-11"
+                                        />
+                                    </div>
+
+                                    <div className="pt-2 border-t">
+                                        <EnvVarsInput 
+                                            envs={envs} 
+                                            setEnvs={setEnvs} 
+                                            disabled={isImporting} 
+                                        />
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </CardContent>
                     <CardFooter className="flex justify-end space-x-3 pt-6 border-t bg-muted/20">
                         <Button

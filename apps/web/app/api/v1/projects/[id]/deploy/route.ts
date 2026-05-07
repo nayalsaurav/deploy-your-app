@@ -57,6 +57,26 @@ export const POST = async (
 
     const [owner, repoName] = project.repositoryFullName.split("/")
 
+    // Get envs
+    const projectWithEnvs = await prisma.project.findUnique({
+      where: { id: project.id },
+      include: { envs: true },
+    });
+
+    const envs: Record<string, string> = {};
+    const encryptionKey = process.env.MASTER_ENCRYPTION_KEY;
+
+    if (projectWithEnvs?.envs) {
+      projectWithEnvs.envs.forEach((e) => {
+        try {
+          const { decrypt } = require("@workspace/database");
+          envs[e.key] = encryptionKey ? decrypt(e.value, encryptionKey) : e.value;
+        } catch (error) {
+          envs[e.key] = e.value;
+        }
+      });
+    }
+
     // Add event to queue
     await deploymentQueue.add("deployment-event", {
       token: account.accessToken,
@@ -66,6 +86,10 @@ export const POST = async (
       repoName,
       projectId: project.id,
       deploymentId: deployment.id,
+      rootDirectory: project.rootDirectory,
+      buildCommand: project.buildCommand,
+      startCommand: project.startCommand,
+      envs,
       prNumber: 0,
       commentId: null,
       installationId: null,

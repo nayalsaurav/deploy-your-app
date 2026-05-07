@@ -1,72 +1,70 @@
-import fs from "node:fs"
-import path from "node:path"
-import { logger } from "../utils/logger"
+import fs from "fs"
+import path, { join } from "path"
+import { logger } from "./logger"
 
-export type ProjectType = "nextjs" | "vite" | "cra" | "unknown"
+export type ProjectType = "nextjs" | "vite" | "cra" | "nodejs" | "unknown"
 
 export interface BuildTools {
   packageManager: "npm" | "yarn" | "pnpm" | "bun"
   installCommand: string
   buildCommand: string
+  suggestedStartCommand?: string
   projectType: ProjectType
   outputDirectory: string
+  isTypescript: boolean
 }
 
 const MAX_PACKAGE_JSON_SIZE = 1024 * 1024 // 1MB
-const SAFE_BUILD_SCRIPT = /^(next build|vite build|tsc|react-scripts build)$/
 
 export function detectProjectType(repoPath: string): {
   type: ProjectType
   outDir: string
+  isTypescript: boolean
+  suggestedStartCommand?: string
 } {
   const packageJsonPath = path.join(repoPath, "package.json")
 
   if (!fs.existsSync(packageJsonPath)) {
-    throw new Error(`No package.json found at ${repoPath}`)
+    throw new Error(`CRITICAL: package.json missing at ${repoPath}`)
   }
 
-  const stat = fs.statSync(packageJsonPath)
-  if (stat.size > MAX_PACKAGE_JSON_SIZE) {
-    throw new Error("package.json exceeds maximum allowed size (1MB)")
+  const stats = fs.statSync(packageJsonPath)
+  if (stats.size > MAX_PACKAGE_JSON_SIZE) {
+    throw new Error("package.json is too large")
   }
 
-  let packageJson: Record<string, unknown>
-  try {
-    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"))
-  } catch (error) {
-    logger.error({ repoPath, error }, "Failed to parse package.json")
-    throw new Error("Failed to parse package.json")
-  }
-
-  const buildScript =
-    typeof packageJson?.scripts === "object"
-      ? ((packageJson.scripts as Record<string, string>)?.build ?? "")
-      : ""
-
-  if (buildScript && !SAFE_BUILD_SCRIPT.test(buildScript.trim())) {
-    throw new Error(`Untrusted build script detected: "${buildScript}"`)
-  }
-
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"))
   const deps = {
-    ...(typeof packageJson.dependencies === "object" &&
-    packageJson.dependencies !== null
-      ? (packageJson.dependencies as Record<string, string>)
-      : {}),
-    ...(typeof packageJson.devDependencies === "object" &&
-    packageJson.devDependencies !== null
-      ? (packageJson.devDependencies as Record<string, string>)
-      : {}),
+    ...(packageJson.dependencies || {}),
+    ...(packageJson.devDependencies || {}),
   }
 
-  if (deps["next"]) return { type: "nextjs", outDir: ".next" }
-  if (deps["vite"]) return { type: "vite", outDir: "dist" }
-  if (deps["react-scripts"]) return { type: "cra", outDir: "build" }
+  const isTypescript = !!deps["typescript"] || fs.existsSync(path.join(repoPath, "tsconfig.json"))
+  const startScript = (packageJson.scripts as Record<string, string>)?.start
+  const hasIndexJs = fs.existsSync(path.join(repoPath, "index.js"))
+  
+  let suggestedStartCommand: string | undefined = undefined
+  if (!startScript && hasIndexJs) {
+    suggestedStartCommand = "node index.js"
+  }
 
-  return { type: "unknown", outDir: "dist" }
+  if (deps["next"]) return { type: "nextjs", outDir: ".next", isTypescript, suggestedStartCommand }
+  if (deps["vite"]) return { type: "vite", outDir: "dist", isTypescript, suggestedStartCommand }
+  if (deps["react-scripts"]) return { type: "cra", outDir: "build", isTypescript, suggestedStartCommand }
+  
+  const isNodeFramework = deps["express"] || deps["fastify"] || deps["koa"] || deps["@nestjs/core"] || deps["hono"]
+  if (isNodeFramework || startScript || hasIndexJs) {
+    if (suggestedStartCommand) {
+       logger.info({ repoPath }, `No start script found, but index.js exists. Using '${suggestedStartCommand}' as fallback.`)
+    }
+    return { type: "nodejs", outDir: "", isTypescript, suggestedStartCommand }
+  }
+
+  return { type: "unknown", outDir: "dist", isTypescript, suggestedStartCommand }
 }
 
 export function detectBuildTools(repoPath: string): BuildTools {
-  const { type: projectType, outDir: outputDirectory } =
+  const { type: projectType, outDir: outputDirectory, isTypescript, suggestedStartCommand } =
     detectProjectType(repoPath)
 
   const hasYarnLock = fs.existsSync(path.join(repoPath, "yarn.lock"))
@@ -96,6 +94,8 @@ export function detectBuildTools(repoPath: string): BuildTools {
       buildCommand: "pnpm run build",
       projectType,
       outputDirectory,
+      isTypescript,
+      suggestedStartCommand,
     }
   if (hasYarnLock)
     return {
@@ -104,6 +104,8 @@ export function detectBuildTools(repoPath: string): BuildTools {
       buildCommand: "yarn build",
       projectType,
       outputDirectory,
+      isTypescript,
+      suggestedStartCommand,
     }
   if (hasBunLock)
     return {
@@ -112,6 +114,8 @@ export function detectBuildTools(repoPath: string): BuildTools {
       buildCommand: "bun run build",
       projectType,
       outputDirectory,
+      isTypescript,
+      suggestedStartCommand,
     }
   if (hasNpmLock)
     return {
@@ -120,6 +124,8 @@ export function detectBuildTools(repoPath: string): BuildTools {
       buildCommand: "npm run build",
       projectType,
       outputDirectory,
+      isTypescript,
+      suggestedStartCommand,
     }
 
   return {
@@ -128,5 +134,7 @@ export function detectBuildTools(repoPath: string): BuildTools {
     buildCommand: "npm run build",
     projectType,
     outputDirectory,
+    isTypescript,
+    suggestedStartCommand,
   }
 }

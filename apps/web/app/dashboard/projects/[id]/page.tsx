@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
-import type { Project, Deployment } from "@workspace/database"
+import type { Project, Deployment, Env } from "@workspace/database"
+import { EnvManager } from "@/components/env-manager"
 import {
   HugeiconsIcon
 } from "@hugeicons/react"
@@ -17,8 +18,10 @@ import {
   CircleIcon,
   AlertCircleIcon,
   Folder01Icon,
-  Delete02Icon
+  Delete02Icon,
+  TerminalFreeIcons
 } from "@hugeicons/core-free-icons"
+import { ServerLogsDialog } from "@/components/server-logs-dialog"
 import Link from "next/link"
 import { Badge } from "@workspace/ui/components/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card"
@@ -43,8 +46,9 @@ export default function ProjectDetail() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showLogsDialog, setShowLogsDialog] = useState(false)
 
-  const { data, isLoading, error } = useQuery<{ data: { project: Project & { deployments: Deployment[] } } }>({
+  const { data, isLoading, error } = useQuery<{ data: { project: Project & { deployments: Deployment[], envs: Env[] } } }>({
     queryKey: ["project", id],
     queryFn: async () => {
       const res = await fetch(`/api/v1/projects/${id}`)
@@ -127,6 +131,14 @@ export default function ProjectDetail() {
             >
               <HugeiconsIcon icon={Tick02Icon} size={16} className="text-muted-foreground" />
               <span>{deployMutation.isPending ? "Deploying..." : "Redeploy"}</span>
+            </button>
+
+            <button
+              onClick={() => setShowLogsDialog(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground"
+            >
+              <HugeiconsIcon icon={TerminalFreeIcons} size={16} className="text-muted-foreground" />
+              <span>Server Logs</span>
             </button>
 
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -212,6 +224,13 @@ export default function ProjectDetail() {
 
       <Separator className="bg-border/50" />
 
+      {/* Middle Part: Environment Variables */}
+      <section>
+        <EnvManager projectId={id as string} envs={project.envs || []} />
+      </section>
+
+      <Separator className="bg-border/50" />
+
       {/* Lower Part: Deployments */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
@@ -287,6 +306,12 @@ export default function ProjectDetail() {
           )}
         </div>
       </section>
+
+      <ServerLogsDialog
+        projectId={id as string}
+        isOpen={showLogsDialog}
+        onOpenChange={setShowLogsDialog}
+      />
     </div>
   )
 }

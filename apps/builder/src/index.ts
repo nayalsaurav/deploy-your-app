@@ -67,7 +67,13 @@ export const worker = new Worker(
         repo.path,
         allocatedPort,
         deploymentId,
-        600_000
+        600_000,
+        {
+          buildCommand: data.buildCommand,
+          startCommand: data.startCommand,
+          rootDirectory: data.rootDirectory,
+          envs: data.envs,
+        }
       )
 
       logBuffer += buildResult.buildLogs
