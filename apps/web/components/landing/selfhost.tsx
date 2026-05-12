@@ -9,11 +9,6 @@ const points = [
 export function SelfHost() {
     return (
         <section id="self-host" className="relative bg-black text-white py-24 md:py-28 px-6 overflow-hidden">
-            <div className="pointer-events-none absolute inset-0">
-                <div className="absolute -top-36 left-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[#F4E8C1]/10 blur-3xl" />
-                <div className="absolute bottom-[-9rem] right-[-6rem] h-[22rem] w-[22rem] rounded-full bg-[#1FB8A5]/12 blur-3xl" />
-                <div className="absolute inset-0 opacity-20 [background-size:26px_26px] [background-image:radial-gradient(circle,rgba(255,255,255,0.12)_1px,transparent_0)]" />
-            </div>
 
             <div className="relative max-w-5xl mx-auto">
                 <div className="inline-flex items-center text-gray-300 border border-gray-700 rounded-full px-4 py-1 text-sm bg-neutral-900 font-medium">

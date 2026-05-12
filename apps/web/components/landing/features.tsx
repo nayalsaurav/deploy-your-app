@@ -167,10 +167,6 @@ export function Features() {
                                         </p>
                                     </div>
 
-                                    <div className="mt-auto flex items-center gap-2 text-xs text-white/60 pt-6">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-[#F4E8C1]/70" />
-                                        <span>Always-on orchestration</span>
-                                    </div>
 
                                     <div className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                                 </div>

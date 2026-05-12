@@ -84,7 +84,7 @@ export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sideb
                 <HugeiconsIcon icon={Rocket01Icon} size={20} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-lg">Hakuro</span>
+                <span className="truncate font-semibold text-lg">Launchdrop</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

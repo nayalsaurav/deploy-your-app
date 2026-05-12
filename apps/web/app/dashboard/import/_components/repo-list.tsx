@@ -108,8 +108,12 @@ export function RepoList({
                                                 {repo.language}
                                             </span>
                                         )}
-                                        <span>•</span>
-                                        <span>Updated {new Date(repo.updatedAt).toLocaleDateString()}</span>
+                                        {repo.updatedAt && (
+                                            <>
+                                                <span>•</span>
+                                                <span>Updated {new Date(repo.updatedAt).toLocaleDateString()}</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 <Button

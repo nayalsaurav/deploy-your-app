@@ -17,9 +17,7 @@ interface BaseNotification {
 }
 
 export class NotificationService {
-  /**
-   * Send an email using Resend
-   */
+
   static async sendEmail(to: string, subject: string, html: string) {
     if (!process.env.RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured. Skipping email.")
@@ -41,9 +39,7 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Send a Discord message via Webhook
-   */
+
   static async sendDiscord(message: string) {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL
     if (!webhookUrl) {
@@ -68,9 +64,6 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Send a Slack message via Webhook
-   */
   static async sendSlack(message: string) {
     if (!slackWebhook) {
       console.warn("SLACK_WEBHOOK_URL not configured. Skipping Slack.")
@@ -86,9 +79,6 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Send a WhatsApp message via Twilio
-   */
   static async sendWhatsApp(toPhoneNumber: string, message: string) {
     if (!twilioClient || !process.env.TWILIO_WHATSAPP_FROM) {
       console.warn("Twilio credentials not configured. Skipping WhatsApp.")

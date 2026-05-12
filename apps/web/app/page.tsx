@@ -5,6 +5,7 @@ import { Hero } from "@/components/landing/hero";
 import { Navbar } from "@/components/landing/navbar";
 import { Process } from "@/components/landing/process";
 import { SelfHost } from "@/components/landing/selfhost";
+import { Footer } from "@/components/landing/footer";
 import { authClient } from "@/lib/auth-client";
 
 export default function Page() {
@@ -25,6 +26,8 @@ export default function Page() {
       <Process />
       <Features />
       <Comparison />
+      <SelfHost />
+      <Footer />
     </div>
   )
 }

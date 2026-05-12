@@ -50,7 +50,7 @@ export const Navbar = ({ onSignIn }: NavbarProps) => {
         <nav className="absolute top-0 left-0 right-0 mx-auto z-50 flex items-center justify-between px-6 md:px-12 py-6 w-full max-w-7xl">
             <div className="flex-1 relative z-50">
                 <Link href="/" className="text-2xl font-serif font-medium tracking-wide text-white" onClick={() => setIsMobileMenuOpen(false)}>
-                    Hakuro.
+                    Launchdrop.
                 </Link>
             </div>
 
