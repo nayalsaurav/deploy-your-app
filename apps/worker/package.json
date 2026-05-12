@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "tsc",
-    "start": "bun run dist/index.js"
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "@workspace/queue": "workspace:*",
