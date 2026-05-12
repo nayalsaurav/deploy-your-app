@@ -42,7 +42,9 @@ export default function IntegrationsPage() {
                             <CardContent className="flex-1">
                             </CardContent>
                             <CardFooter>
-                                <Button variant="outline" className="w-full">Connect</Button>
+                                <a href="https://kairox.nayalsaurav.in/" target="_blank" rel="noreferrer" className="w-full">
+                                    <Button variant="outline" className="w-full">Connect</Button>
+                                </a>
                             </CardFooter>
                         </Card>
                     </div>
